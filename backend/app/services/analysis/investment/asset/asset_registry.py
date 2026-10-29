@@ -1,0 +1,262 @@
+from app.models.investment_asset import (
+    AssetClass,
+    AssetType,
+    InvestmentAsset,
+    MacroFactor,
+)
+
+
+class AssetRegistry:
+    def __init__(self) -> None:
+        self._assets = self._build_assets()
+
+    def _build_assets(self) -> list[InvestmentAsset]:
+        return [
+            InvestmentAsset(
+                code="BROAD_MARKET",
+                name="Broad Market Equities",
+                asset_class=AssetClass.EQUITIES,
+                asset_type=AssetType.BROAD_MARKET,
+                sensitivities={
+                    MacroFactor.GROWTH: 2,
+                    MacroFactor.ACTIVITY: 2,
+                    MacroFactor.EMPLOYMENT: 1,
+                    MacroFactor.INFLATION: -1,
+                    MacroFactor.INTEREST_RATES: -1,
+                    MacroFactor.FINANCIAL_CONDITIONS: 2,
+                    MacroFactor.CREDIT: 1,
+                    MacroFactor.HOUSING: 1,
+                    MacroFactor.TRADE: 1,
+                },
+            ),
+            InvestmentAsset(
+                code="FINANCIALS",
+                name="Financials",
+                asset_class=AssetClass.EQUITIES,
+                asset_type=AssetType.FINANCIALS,
+                sensitivities={
+                    MacroFactor.GROWTH: 2,
+                    MacroFactor.ACTIVITY: 2,
+                    MacroFactor.EMPLOYMENT: 1,
+                    MacroFactor.INTEREST_RATES: 1,
+                    MacroFactor.FINANCIAL_CONDITIONS: 2,
+                    MacroFactor.CREDIT: 2,
+                    MacroFactor.HOUSING: 1,
+                    MacroFactor.TRADE: 1,
+                },
+            ),
+            InvestmentAsset(
+                code="INDUSTRIALS",
+                name="Industrials",
+                asset_class=AssetClass.EQUITIES,
+                asset_type=AssetType.INDUSTRIALS,
+                sensitivities={
+                    MacroFactor.GROWTH: 2,
+                    MacroFactor.ACTIVITY: 2,
+                    MacroFactor.EMPLOYMENT: 1,
+                    MacroFactor.INFLATION: -1,
+                    MacroFactor.INTEREST_RATES: -1,
+                    MacroFactor.FINANCIAL_CONDITIONS: 1,
+                    MacroFactor.CREDIT: 1,
+                    MacroFactor.TRADE: 2,
+                    MacroFactor.COMMODITIES: -1,
+                },
+            ),
+            InvestmentAsset(
+                code="CONSUMER",
+                name="Consumer",
+                asset_class=AssetClass.EQUITIES,
+                asset_type=AssetType.CONSUMER,
+                sensitivities={
+                    MacroFactor.GROWTH: 2,
+                    MacroFactor.ACTIVITY: 1,
+                    MacroFactor.EMPLOYMENT: 2,
+                    MacroFactor.INFLATION: -1,
+                    MacroFactor.INTEREST_RATES: -1,
+                    MacroFactor.FINANCIAL_CONDITIONS: 1,
+                    MacroFactor.CREDIT: 1,
+                    MacroFactor.HOUSING: 1,
+                },
+            ),
+            InvestmentAsset(
+                code="TECHNOLOGY",
+                name="Technology",
+                asset_class=AssetClass.EQUITIES,
+                asset_type=AssetType.TECHNOLOGY,
+                sensitivities={
+                    MacroFactor.GROWTH: 1,
+                    MacroFactor.ACTIVITY: 1,
+                    MacroFactor.INFLATION: -1,
+                    MacroFactor.INTEREST_RATES: -2,
+                    MacroFactor.FINANCIAL_CONDITIONS: 1,
+                    MacroFactor.TRADE: 1,
+                },
+            ),
+            InvestmentAsset(
+                code="ENERGY",
+                name="Energy",
+                asset_class=AssetClass.EQUITIES,
+                asset_type=AssetType.ENERGY,
+                sensitivities={
+                    MacroFactor.GROWTH: 1,
+                    MacroFactor.ACTIVITY: 1,
+                    MacroFactor.INFLATION: 1,
+                    MacroFactor.COMMODITIES: 2,
+                    MacroFactor.TRADE: 1,
+                },
+            ),
+            InvestmentAsset(
+                code="UTILITIES",
+                name="Utilities",
+                asset_class=AssetClass.EQUITIES,
+                asset_type=AssetType.UTILITIES,
+                sensitivities={
+                    MacroFactor.INFLATION: -1,
+                    MacroFactor.INTEREST_RATES: -2,
+                    MacroFactor.FINANCIAL_CONDITIONS: 1,
+                    MacroFactor.CREDIT: 1,
+                },
+            ),
+            InvestmentAsset(
+                code="GOVERNMENT_BONDS",
+                name="Government Bonds",
+                asset_class=AssetClass.BONDS,
+                asset_type=AssetType.GOVERNMENT,
+                sensitivities={
+                    MacroFactor.GROWTH: -1,
+                    MacroFactor.ACTIVITY: -1,
+                    MacroFactor.EMPLOYMENT: -1,
+                    MacroFactor.INFLATION: -2,
+                    MacroFactor.INTEREST_RATES: 2,
+                    MacroFactor.FINANCIAL_CONDITIONS: 1,
+                },
+            ),
+            InvestmentAsset(
+                code="INVESTMENT_GRADE",
+                name="Investment Grade Credit",
+                asset_class=AssetClass.BONDS,
+                asset_type=AssetType.INVESTMENT_GRADE,
+                sensitivities={
+                    MacroFactor.GROWTH: 1,
+                    MacroFactor.ACTIVITY: 1,
+                    MacroFactor.INFLATION: -1,
+                    MacroFactor.INTEREST_RATES: 1,
+                    MacroFactor.FINANCIAL_CONDITIONS: 2,
+                    MacroFactor.CREDIT: 2,
+                },
+            ),
+            InvestmentAsset(
+                code="HIGH_YIELD",
+                name="High Yield Credit",
+                asset_class=AssetClass.BONDS,
+                asset_type=AssetType.HIGH_YIELD,
+                sensitivities={
+                    MacroFactor.GROWTH: 2,
+                    MacroFactor.ACTIVITY: 2,
+                    MacroFactor.EMPLOYMENT: 1,
+                    MacroFactor.INFLATION: -1,
+                    MacroFactor.INTEREST_RATES: -1,
+                    MacroFactor.FINANCIAL_CONDITIONS: 2,
+                    MacroFactor.CREDIT: 2,
+                },
+            ),
+            InvestmentAsset(
+                code="RESIDENTIAL_REAL_ESTATE",
+                name="Residential Real Estate",
+                asset_class=AssetClass.REAL_ESTATE,
+                asset_type=AssetType.RESIDENTIAL,
+                sensitivities={
+                    MacroFactor.GROWTH: 2,
+                    MacroFactor.ACTIVITY: 1,
+                    MacroFactor.EMPLOYMENT: 2,
+                    MacroFactor.INTEREST_RATES: -2,
+                    MacroFactor.FINANCIAL_CONDITIONS: 2,
+                    MacroFactor.CREDIT: 2,
+                    MacroFactor.HOUSING: 2,
+                },
+            ),
+            InvestmentAsset(
+                code="COMMERCIAL_REAL_ESTATE",
+                name="Commercial Real Estate",
+                asset_class=AssetClass.REAL_ESTATE,
+                asset_type=AssetType.COMMERCIAL,
+                sensitivities={
+                    MacroFactor.GROWTH: 2,
+                    MacroFactor.ACTIVITY: 2,
+                    MacroFactor.EMPLOYMENT: 1,
+                    MacroFactor.INTEREST_RATES: -2,
+                    MacroFactor.FINANCIAL_CONDITIONS: 2,
+                    MacroFactor.CREDIT: 2,
+                },
+            ),
+            InvestmentAsset(
+                code="REITS",
+                name="REITs",
+                asset_class=AssetClass.REAL_ESTATE,
+                asset_type=AssetType.REITS,
+                sensitivities={
+                    MacroFactor.GROWTH: 1,
+                    MacroFactor.ACTIVITY: 1,
+                    MacroFactor.INTEREST_RATES: -2,
+                    MacroFactor.FINANCIAL_CONDITIONS: 2,
+                    MacroFactor.CREDIT: 2,
+                    MacroFactor.HOUSING: 1,
+                },
+            ),
+            InvestmentAsset(
+                code="OIL",
+                name="Oil",
+                asset_class=AssetClass.COMMODITIES,
+                asset_type=AssetType.OIL,
+                sensitivities={
+                    MacroFactor.GROWTH: 1,
+                    MacroFactor.ACTIVITY: 1,
+                    MacroFactor.INFLATION: 1,
+                    MacroFactor.COMMODITIES: 2,
+                    MacroFactor.TRADE: 1,
+                },
+            ),
+            InvestmentAsset(
+                code="GOLD",
+                name="Gold",
+                asset_class=AssetClass.COMMODITIES,
+                asset_type=AssetType.GOLD,
+                sensitivities={
+                    MacroFactor.GROWTH: -1,
+                    MacroFactor.INFLATION: 1,
+                    MacroFactor.INTEREST_RATES: -1,
+                    MacroFactor.FINANCIAL_CONDITIONS: -1,
+                    MacroFactor.CURRENCY: 1,
+                },
+            ),
+            InvestmentAsset(
+                code="INDUSTRIAL_COMMODITIES",
+                name="Industrial Commodities",
+                asset_class=AssetClass.COMMODITIES,
+                asset_type=AssetType.INDUSTRIAL_COMMODITIES,
+                sensitivities={
+                    MacroFactor.GROWTH: 2,
+                    MacroFactor.ACTIVITY: 2,
+                    MacroFactor.INFLATION: 1,
+                    MacroFactor.INTEREST_RATES: -1,
+                    MacroFactor.TRADE: 2,
+                    MacroFactor.COMMODITIES: 2,
+                },
+            ),
+            InvestmentAsset(
+                code="LOCAL_CURRENCY",
+                name="Local Currency",
+                asset_class=AssetClass.FX,
+                asset_type=AssetType.LOCAL_CURRENCY,
+                sensitivities={},
+            ),
+        ]
+
+    def get_all(self) -> list[InvestmentAsset]:
+        return self._assets.copy()
+
+    def get_by_code(self, code: str) -> InvestmentAsset | None:
+        return next(
+            (asset for asset in self._assets if asset.code == code),
+            None,
+        )
