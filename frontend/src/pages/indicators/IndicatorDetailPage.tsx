@@ -1,16 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useParams } from "react-router-dom";
 
-import type {
-  Indicator,
-  Region,
-  Mode,
-  CycleAnalysisResult,
-  FeatureAnalysisResult,
-  InvestmentAnalysisResult,
-  InvestmentAssetRankingResult,
-} from "./types.ts";
+import type { Region, Mode } from "./types.ts";
+
+import { useAsyncData } from "../../hooks/useAsyncData";
 
 import {
   fetchIndicator,
@@ -19,6 +13,7 @@ import {
   fetchFeatureAnalysis,
   getInvestmentAnalysis,
   fetchInvestmentAssetRanking,
+  resolveIndicatorCode,
 } from "./api";
 
 import ModeSelector from "../../components/selectors/ModeSelector.tsx";
@@ -35,221 +30,84 @@ import InvestmentThesis from "../../components/analysis/InvestmentThesis";
 
 import AssetRanking from "../../components/analysis/AssetRanking";
 
+const EMPTY_REGIONS: Region[] = [];
+
 export default function IndicatorDetailPage() {
   const { code } = useParams();
 
-  const [indicator, setIndicator] = useState<Indicator | null>(null);
-
-  const [regions, setRegions] = useState<Region[]>([]);
-
   const [mode, setMode] = useState<Mode>("timeline");
 
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-
-  const [loading, setLoading] = useState(true);
-
-  const [cycleAnalysis, setCycleAnalysis] =
-    useState<CycleAnalysisResult | null>(null);
-
-  const [cycleLoading, setCycleLoading] = useState(false);
-
-  const [featureAnalysis, setFeatureAnalysis] =
-    useState<FeatureAnalysisResult | null>(null);
-
-  const [featureLoading, setFeatureLoading] = useState(false);
-
-  const [investmentAnalysis, setInvestmentAnalysis] =
-    useState<InvestmentAnalysisResult | null>(null);
-
-  const [investmentLoading, setInvestmentLoading] = useState(false);
-
-  const [investmentAssetRanking, setInvestmentAssetRanking] =
-    useState<InvestmentAssetRankingResult | null>(null);
-
-  const [investmentAssetLoading, setInvestmentAssetLoading] =
-    useState(false);
+  // Región elegida por el usuario. Mientras sea null se usa la
+  // primera región disponible (valor derivado, sin efectos).
+  const [userRegion, setUserRegion] = useState<string | null>(null);
 
   // =====================================================
   // CARGAR INDICADOR + REGIONES
   // =====================================================
 
-  useEffect(() => {
-    loadPage();
-  }, [code]);
+  const indicatorResult = useAsyncData(code ?? null, (signal) =>
+    fetchIndicator(code!, signal),
+  );
 
-  async function loadPage() {
-    if (!code) return;
+  const regionsResult = useAsyncData("regions", fetchRegions);
 
-    try {
-      setLoading(true);
+  const indicator = indicatorResult.data;
+  const regions = regionsResult.data ?? EMPTY_REGIONS;
+  const loading = indicatorResult.loading || regionsResult.loading;
 
-      const [indicatorData, regionsData] = await Promise.all([
-        fetchIndicator(code),
-        fetchRegions(),
-      ]);
+  const selectedRegion = userRegion ?? regions[0]?.code ?? null;
 
-      setIndicator(indicatorData);
-      setRegions(regionsData);
+  const effectiveCode =
+    code && selectedRegion
+      ? resolveIndicatorCode(code, selectedRegion)
+      : null;
 
-      if (regionsData.length > 0) {
-        setSelectedRegion(
-          (current) => current ?? regionsData[0].code,
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Clave compartida por los análisis que dependen de indicador efectivo + región.
+  const analysisKey =
+    effectiveCode && selectedRegion
+      ? `${effectiveCode}|${selectedRegion}`
+      : null;
 
   // =====================================================
   // FEATURE ANALYSIS
   // =====================================================
 
-  useEffect(() => {
-    if (!code || !selectedRegion) {
-      setFeatureAnalysis(null);
-      return;
-    }
-
-    loadFeatureAnalysis(code, selectedRegion);
-  }, [code, selectedRegion]);
-
-  async function loadFeatureAnalysis(
-    indicatorCode: string,
-    regionCode: string,
-  ) {
-    try {
-      setFeatureLoading(true);
-
-      const data = await fetchFeatureAnalysis(
-        indicatorCode,
-        regionCode,
-      );
-
-      setFeatureAnalysis(data);
-    } catch (error) {
-      console.error(
-        `Error cargando features para ${regionCode}:`,
-        error,
-      );
-
-      setFeatureAnalysis(null);
-    } finally {
-      setFeatureLoading(false);
-    }
-  }
+  const featureResult = useAsyncData(analysisKey, (signal) =>
+    fetchFeatureAnalysis(effectiveCode!, selectedRegion!, signal),
+  );
 
   // =====================================================
   // INVESTMENT ANALYSIS
   // =====================================================
 
-  useEffect(() => {
-    if (!code || !selectedRegion) {
-      setInvestmentAnalysis(null);
-      return;
-    }
-
-    loadInvestmentAnalysis(code, selectedRegion);
-  }, [code, selectedRegion]);
-
-  async function loadInvestmentAnalysis(
-    indicatorCode: string,
-    regionCode: string,
-  ) {
-    try {
-      setInvestmentLoading(true);
-
-      const data = await getInvestmentAnalysis(
-        indicatorCode,
-        regionCode,
-      );
-
-      setInvestmentAnalysis(data);
-    } catch (error) {
-      console.error(
-        `Error cargando tesis de inversión para ${regionCode}:`,
-        error,
-      );
-
-      setInvestmentAnalysis(null);
-    } finally {
-      setInvestmentLoading(false);
-    }
-  }
+  const investmentResult = useAsyncData(analysisKey, (signal) =>
+    getInvestmentAnalysis(effectiveCode!, selectedRegion!, signal),
+  );
 
   // =====================================================
   // INVESTMENT ASSET RANKING
   // =====================================================
 
-  useEffect(() => {
-    if (!selectedRegion) {
-      setInvestmentAssetRanking(null);
-      return;
-    }
-
-    loadInvestmentAssetRanking(selectedRegion);
-  }, [selectedRegion]);
-
-  async function loadInvestmentAssetRanking(
-    regionCode: string,
-  ) {
-    try {
-      setInvestmentAssetLoading(true);
-
-      const data = await fetchInvestmentAssetRanking(
-        regionCode,
-      );
-
-      setInvestmentAssetRanking(data);
-    } catch (error) {
-      console.error(
-        `Error cargando ranking de activos para ${regionCode}:`,
-        error,
-      );
-
-      setInvestmentAssetRanking(null);
-    } finally {
-      setInvestmentAssetLoading(false);
-    }
-  }
+  const assetRankingResult = useAsyncData(selectedRegion, (signal) =>
+    fetchInvestmentAssetRanking(selectedRegion!, signal),
+  );
 
   // =====================================================
   // CYCLE ANALYSIS
   // =====================================================
 
-  useEffect(() => {
-    if (!code || !selectedRegion) {
-      setCycleAnalysis(null);
-      return;
-    }
+  const cycleResult = useAsyncData(analysisKey, (signal) =>
+    fetchCycleAnalysis(effectiveCode!, selectedRegion!, signal),
+  );
 
-    loadCycleAnalysis(code, selectedRegion);
-  }, [code, selectedRegion]);
-
-  async function loadCycleAnalysis(
-    indicatorCode: string,
-    regionCode: string,
-  ) {
-    try {
-      setCycleLoading(true);
-
-      const cycleData = await fetchCycleAnalysis(
-        indicatorCode,
-        regionCode,
-      );
-
-      setCycleAnalysis(cycleData);
-    } catch (error) {
-      console.error(
-        `Error cargando análisis de ciclo para ${regionCode}:`,
-        error,
-      );
-
-      setCycleAnalysis(null);
-    } finally {
-      setCycleLoading(false);
-    }
-  }
+  const featureAnalysis = featureResult.data;
+  const featureLoading = featureResult.loading;
+  const investmentAnalysis = investmentResult.data;
+  const investmentLoading = investmentResult.loading;
+  const investmentAssetRanking = assetRankingResult.data;
+  const investmentAssetLoading = assetRankingResult.loading;
+  const cycleAnalysis = cycleResult.data;
+  const cycleLoading = cycleResult.loading;
 
   // =====================================================
   // LOADING
@@ -308,7 +166,7 @@ export default function IndicatorDetailPage() {
               indicator={indicator}
               regions={regions}
               selectedRegion={selectedRegion}
-              onRegionChange={setSelectedRegion}
+              onRegionChange={setUserRegion}
             />
 
             {/* FEATURE ANALYSIS */}
@@ -369,6 +227,7 @@ export default function IndicatorDetailPage() {
 
         {mode === "compare" && code && (
           <CompareView
+            key={code}
             code={code}
             indicator={indicator}
           />

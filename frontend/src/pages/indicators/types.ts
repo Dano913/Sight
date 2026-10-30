@@ -90,12 +90,14 @@ export interface FeatureValues {
   distance_from_max: number | null;
   distance_from_min: number | null;
 
-  log_difference: number | null;
-  percentage_change: number | null;
-  cumulative_growth: number | null;
+  log_difference?: number | null;
+  percentage_change?: number | null;
+  cumulative_growth?: number | null;
+  change?: number | null;
+  yoy_change?: number | null;
   momentum: number | null;
-  yoy_growth: number | null;
-  yoy_log_growth: number | null;
+  yoy_growth?: number | null;
+  yoy_log_growth?: number | null;
 
   rolling_slope_short: number | null;
   rolling_slope_medium: number | null;

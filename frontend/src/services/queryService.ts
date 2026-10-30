@@ -1,21 +1,26 @@
 import api from "../api/client";
 
-export async function getIndicator(indicator: string) {
-    const url = `/query/indicator/${indicator}`;
+import type { MacroRegimeData } from "../components/analysis/MacroRegime";
 
-    const response = await api.get(url);
-
-    console.log(
-        "GET",
-        `${api.defaults.baseURL}${url}`
+export async function getIndicator(
+    indicator: string,
+    signal?: AbortSignal
+) {
+    const response = await api.get(
+        `/query/indicator/${indicator}`,
+        { signal }
     );
 
     return response.data;
 }
 
-export async function getRegion(region: string) {
+export async function getRegion(
+    region: string,
+    signal?: AbortSignal
+) {
     const response = await api.get(
-        `/query/region/${region}`
+        `/query/region/${region}`,
+        { signal }
     );
 
     return response.data;
@@ -23,7 +28,8 @@ export async function getRegion(region: string) {
 
 export async function compareRegions(
     indicator: string,
-    regions: string[]
+    regions: string[],
+    signal?: AbortSignal
 ) {
     const response = await api.get(
         "/query/compare",
@@ -32,14 +38,27 @@ export async function compareRegions(
                 indicator,
                 regions: regions.join(","),
             },
+            signal,
         }
     );
 
     return response.data;
 }
 
-export async function getRegions() {
-    const response = await api.get("/regions/");
+export async function getRegions(signal?: AbortSignal) {
+    const response = await api.get("/regions/", { signal });
 
     return response.data;
+}
+
+export async function getMacroRegime(
+    region: string,
+    signal?: AbortSignal
+): Promise<MacroRegimeData | null> {
+    const response = await api.get<{ macro_regime?: MacroRegimeData | null }>(
+        `/analysis/regime/${region}`,
+        { signal }
+    );
+
+    return response.data.macro_regime ?? null;
 }

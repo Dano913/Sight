@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
-
 import type {
   Indicator,
   Region,
-  Observation,
+  ObservationResponse,
 } from "../types.ts";
 
-import { fetchTimeline } from "../api";
+import { useAsyncData } from "../../../hooks/useAsyncData";
+
+import {
+  fetchTimeline,
+  resolveIndicatorCode,
+} from "../api";
 import TimelineChart from "./timeline/TimelineChart";
 import TimelineTable from "./timeline/TimelineTable";
 
@@ -18,24 +21,7 @@ interface TimelineViewProps {
   onRegionChange: (region: string) => void;
 }
 
-// Indicadores que tienen una variante "por país"
-// distinta de su variante agregada UE
-const BY_COUNTRY_MAP: Record<string, string> = {
-  EXPORTS: "EXPORTS_BY_COUNTRY",
-  IMPORTS: "IMPORTS_BY_COUNTRY",
-  TRADE: "TRADE_BALANCE_BY_COUNTRY",
-};
-
-function resolveIndicatorCode(
-  baseCode: string,
-  regionCode: string
-) {
-  if (regionCode === "EU27_2020") {
-    return baseCode;
-  }
-
-  return BY_COUNTRY_MAP[baseCode] ?? baseCode;
-}
+const EMPTY_OBSERVATIONS: ObservationResponse[] = [];
 
 export default function TimelineView({
   code,
@@ -44,55 +30,30 @@ export default function TimelineView({
   selectedRegion,
   onRegionChange,
 }: TimelineViewProps) {
-  const [observations, setObservations] =
-    useState<Observation[]>([]);
+  const effectiveCode = selectedRegion
+    ? resolveIndicatorCode(code, selectedRegion)
+    : null;
 
-  const [loading, setLoading] = useState(true);
-
-  const [error, setError] =
-    useState<string | null>(null);
-
-  useEffect(() => {
-    if (!selectedRegion) {
-      setObservations([]);
-      return;
-    }
-
-    loadObservations();
-  }, [selectedRegion, code]);
-
-  async function loadObservations() {
-    if (!selectedRegion) return;
-
-    const effectiveCode = resolveIndicatorCode(
-      code,
-      selectedRegion
-    );
-
-    try {
-      setLoading(true);
-      setError(null);
-
+  const timeline = useAsyncData(
+    selectedRegion && effectiveCode
+      ? `${selectedRegion}|${effectiveCode}`
+      : null,
+    async (signal) => {
       const data = await fetchTimeline(
-        selectedRegion,
-        effectiveCode
+        selectedRegion!,
+        effectiveCode!,
+        signal
       );
 
-      setObservations(
-        data.indicators?.[effectiveCode] ?? []
-      );
-    } catch (err) {
-      console.error(err);
-
-      setObservations([]);
-
-      setError(
-        `No hay datos de ${effectiveCode} para este país.`
-      );
-    } finally {
-      setLoading(false);
+      return data.indicators?.[effectiveCode!] ?? EMPTY_OBSERVATIONS;
     }
-  }
+  );
+
+  const observations = timeline.data ?? EMPTY_OBSERVATIONS;
+  const loading = timeline.loading;
+  const error = timeline.error
+    ? `No hay datos de ${effectiveCode} para este país.`
+    : null;
 
   return (
     <div>

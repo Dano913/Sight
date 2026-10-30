@@ -1,15 +1,18 @@
-import { useEffect, useState } from "react";
-
-import client from "../api/client";
+import { useState } from "react";
 
 import {
     getRegions,
     getRegion,
+    getMacroRegime,
 } from "../services/queryService";
+
+import { useAsyncData } from "../hooks/useAsyncData";
 
 import MacroLineChart from "../components/charts/MacroLineChart";
 
-import MacroRegime from "../components/analysis/MacroRegime";
+import MacroRegime, {
+    type MacroRegimeData,
+} from "../components/analysis/MacroRegime";
 
 
 type Region = {
@@ -36,137 +39,39 @@ type RegionData = {
     };
 };
 
+const EMPTY_REGIONS: Region[] = [];
+
 
 export default function Dashboard() {
-
-    const [regions, setRegions] =
-        useState<Region[]>([]);
 
     const [selectedRegion, setSelectedRegion] =
         useState("EU27_2020");
 
-    const [regionData, setRegionData] =
-        useState<RegionData | null>(null);
+    const regionsResult = useAsyncData<Region[]>(
+        "dashboard-regions",
+        getRegions
+    );
 
-    const [macroRegime, setMacroRegime] =
-        useState<any>(null);
+    const dashboardDataResult = useAsyncData<{
+        regionData: RegionData;
+        macroRegime: MacroRegimeData | null;
+    }>(
+        selectedRegion || null,
+        async (signal) => {
+            const [regionData, macroRegime] = await Promise.all([
+                getRegion(selectedRegion, signal),
+                getMacroRegime(selectedRegion, signal),
+            ]);
 
-    const [loadingRegions, setLoadingRegions] =
-        useState(true);
-
-    const [loadingData, setLoadingData] =
-        useState(false);
-
-
-    /*
-     * LOAD REGIONS
-     */
-
-    useEffect(() => {
-
-        async function loadRegions() {
-
-            try {
-
-                const data = await getRegions();
-
-                setRegions(data);
-
-            }
-            catch (error) {
-
-                console.error(
-                    "Error loading regions:",
-                    error
-                );
-
-            }
-            finally {
-
-                setLoadingRegions(false);
-
-            }
-
+            return { regionData, macroRegime };
         }
+    );
 
-        loadRegions();
-
-    }, []);
-
-
-    /*
-     * LOAD REGION DATA
-     */
-
-    useEffect(() => {
-
-        if (!selectedRegion) {
-            return;
-        }
-
-        async function loadData() {
-
-            /*
-             * Start loading immediately.
-             */
-
-            setLoadingData(true);
-
-            /*
-             * Remove data from the
-             * previously selected region.
-             */
-
-            setRegionData(null);
-            setMacroRegime(null);
-
-            try {
-
-                const [
-                    data,
-                    regimeResponse,
-                ] = await Promise.all([
-
-                    getRegion(
-                        selectedRegion
-                    ),
-
-                    client.get(
-                        `/analysis/regime/${selectedRegion}`
-                    ),
-
-                ]);
-
-                setRegionData(data);
-
-                setMacroRegime(
-                    regimeResponse.data
-                        .macro_regime
-                );
-
-            }
-            catch (error) {
-
-                console.error(
-                    "Error loading region data:",
-                    error
-                );
-
-                setRegionData(null);
-                setMacroRegime(null);
-
-            }
-            finally {
-
-                setLoadingData(false);
-
-            }
-
-        }
-
-        loadData();
-
-    }, [selectedRegion]);
+    const regions = regionsResult.data ?? EMPTY_REGIONS;
+    const loadingRegions = regionsResult.loading;
+    const loadingData = dashboardDataResult.loading;
+    const regionData = dashboardDataResult.data?.regionData ?? null;
+    const macroRegime = dashboardDataResult.data?.macroRegime ?? null;
 
 
     /*

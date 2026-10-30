@@ -1,4 +1,4 @@
-import type { Observation } from "../../types.ts";
+import type { ObservationResponse as Observation } from "../../types.ts";
 
 interface TimelineTableProps {
   observations: Observation[];

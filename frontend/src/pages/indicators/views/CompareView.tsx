@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type {
   Indicator,
   RegionResponse,
   ObservationResponse,
 } from "../types";
 import { fetchComparison } from "../api";
+import { useAsyncData } from "../../../hooks/useAsyncData";
 
 import CompareChart, {
   type CompareRow,
@@ -35,79 +36,52 @@ const DEFAULT_REGIONS = [
   "US",
 ];
 
+const EMPTY_COMPARISON: RegionResponse[] = [];
+
+/**
+ * Nota: el componente padre debe montarlo con `key={code}` para que
+ * las selecciones del usuario (año / países) se reinicien al cambiar
+ * de indicador.
+ */
 export default function CompareView({
   code,
   indicator,
 }: CompareViewProps) {
-  const [comparison, setComparison] = useState<RegionResponse[]>([]);
-  const [selectedYear, setSelectedYear] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
+  const comparisonResult = useAsyncData(code, (signal) =>
+    fetchComparison(code, DEFAULT_REGIONS, signal)
+  );
 
-  useEffect(() => {
-    loadComparison();
-  }, [code]);
+  const comparison = comparisonResult.data ?? EMPTY_COMPARISON;
+  const loading = comparisonResult.loading;
 
-  async function loadComparison() {
+  // null = el usuario aún no ha elegido; se usan valores por defecto
+  // derivados de los datos (año más reciente / todos los países).
+  const [userYear, setUserYear] = useState<string | null>(null);
+  const [userRegions, setUserRegions] = useState<string[] | null>(null);
 
-    console.log("LOAD COMPARISON");
-    console.log(code);
+  const allRegionCodes = useMemo(
+    () => comparison.map((r) => r.region.code),
+    [comparison]
+  );
 
-    try {
-      setLoading(true);
+  const selectedRegions = userRegions ?? allRegionCodes;
 
-      const data = await fetchComparison(code, DEFAULT_REGIONS);
+  function toggleRegion(regionCode: string) {
+    setUserRegions((current) => {
+      const base = current ?? allRegionCodes;
 
-      console.log(data[0]);
-      console.log(data[0].indicators);
-      console.log(Object.keys(data[0].indicators));
-      console.log(data);
-
-      setComparison(data);
-
-      setSelectedRegions(
-        data.map((r: { region: { code: any; }; }) => r.region.code)
-      );
-
-      const years = new Set<string>();
-
-      data.forEach((region: { indicators: { [x: string]: never[]; }; }) => {
-        const observations: ObservationResponse[] =
-          region.indicators[code] ?? [];
-
-        observations.forEach((observation) => {
-          years.add(observation.date.slice(0, 4));
-        });
-      });
-
-      const sortedYears = [...years].sort(
-        (a, b) => Number(b) - Number(a)
-      );
-
-      if (sortedYears.length > 0) {
-        setSelectedYear(sortedYears[0]);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function toggleRegion(code: string) {
-    setSelectedRegions((current) =>
-      current.includes(code)
-        ? current.filter((c) => c !== code)
-        : [...current, code]
-    );
+      return base.includes(regionCode)
+        ? base.filter((c) => c !== regionCode)
+        : [...base, regionCode];
+    });
   }
 
   function selectAll() {
-    setSelectedRegions(
-      comparison.map((r) => r.region.code)
-    );
+    setUserRegions(null);
   }
 
   function clearAll() {
-    setSelectedRegions([]);
+    setUserRegions([]);
   }
 
   const availableYears = useMemo(() => {
@@ -126,6 +100,11 @@ export default function CompareView({
       (a, b) => Number(b) - Number(a)
     );
   }, [comparison, code]);
+
+  const selectedYear =
+    userYear && availableYears.includes(userYear)
+      ? userYear
+      : availableYears[0] ?? "";
 
   const rows: CompareRow[] = useMemo(() => {
     return comparison
@@ -161,7 +140,7 @@ export default function CompareView({
 
         <select
           value={selectedYear}
-          onChange={(e) => setSelectedYear(e.target.value)}
+          onChange={(e) => setUserYear(e.target.value)}
           className="w-40 rounded-lg border border-[#32485f] bg-[#1b2a39] px-3 py-2 text-white"
         >
           {availableYears.map((year) => (

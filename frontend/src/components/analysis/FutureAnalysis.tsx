@@ -1,11 +1,32 @@
-import type { FeatureAnalysisResult } from "../../pages/indicators/types";
+import type { FeatureAnalysisResult, FeatureKey } from "../../pages/indicators/types";
 import { FeatureGroup } from "./FeatureGroup";
 
 interface FeatureAnalysisProps {
   data: FeatureAnalysisResult;
 }
 
+const LOG_GROWTH_FEATURES: [FeatureKey, string][] = [
+  ["percentage_change", "Cambio porcentual"],
+  ["log_difference", "Diferencia logarítmica"],
+  ["yoy_growth", "Crecimiento interanual"],
+  ["yoy_log_growth", "Crecimiento logarítmico interanual"],
+  ["cumulative_growth", "Crecimiento acumulado"],
+  ["momentum", "Momentum"],
+];
+
+const RATE_GROWTH_FEATURES: [FeatureKey, string][] = [
+  ["change", "Variación del periodo"],
+  ["yoy_change", "Variación interanual"],
+  ["momentum", "Momentum"],
+];
+
 export function FeatureAnalysis({ data }: FeatureAnalysisProps) {
+  const latest = data.observations[data.observations.length - 1];
+  const isRateSeries =
+    latest !== undefined &&
+    "change" in latest.features &&
+    !("percentage_change" in latest.features);
+
   return (
     <section className="mt-8 space-y-6">
       <header>
@@ -28,14 +49,7 @@ export function FeatureAnalysis({ data }: FeatureAnalysisProps) {
 
       <FeatureGroup
         title="Crecimiento"
-        features={[
-          ["percentage_change", "Cambio porcentual"],
-          ["log_difference", "Diferencia logarítmica"],
-          ["yoy_growth", "Crecimiento interanual"],
-          ["yoy_log_growth", "Crecimiento logarítmico interanual"],
-          ["cumulative_growth", "Crecimiento acumulado"],
-          ["momentum", "Momentum"],
-        ]}
+        features={isRateSeries ? RATE_GROWTH_FEATURES : LOG_GROWTH_FEATURES}
         data={data}
       />
 

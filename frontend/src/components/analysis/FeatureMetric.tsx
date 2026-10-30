@@ -28,7 +28,11 @@ function formatFeatureValue(
   value: number | null | undefined,
   featureKey: string,
 ): string {
-  if (value === null || value === undefined) {
+  if (
+    value === null ||
+    value === undefined ||
+    !Number.isFinite(value)
+  ) {
     return "—";
   }
 
@@ -62,7 +66,10 @@ function formatFeatureValue(
     return value.toFixed(2);
   }
 
+  const maxFractionDigits =
+    Math.abs(value) > 0 && Math.abs(value) < 1 ? 4 : 2;
+
   return new Intl.NumberFormat("es-ES", {
-    maximumFractionDigits: 2,
+    maximumFractionDigits: maxFractionDigits,
   }).format(value);
 }

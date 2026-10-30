@@ -6,7 +6,7 @@ type Evidence = {
     supporting_indicators?: string[];
 };
 
-type MacroRegimeData = {
+export type MacroRegimeData = {
     regime: string;
     confidence: string;
     score: number;

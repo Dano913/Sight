@@ -13,11 +13,7 @@ export function FeatureGroup({
   data,
 }: FeatureGroupProps) {
   const latest = data.observations[data.observations.length - 1];
-  console.log("FEATURE DATA:", data);
-  console.log("FEATURE OBSERVATIONS:", data.observations.length);
-  console.log("LATEST FEATURE:", latest);
-  console.log("LATEST FEATURES:", latest?.features);
-  
+
   if (!latest) {
     return null;
   }

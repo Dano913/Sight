@@ -8,7 +8,7 @@ import {
   CartesianGrid,
 } from "recharts";
 
-import type { Observation } from "../../types.ts";
+import type { ObservationResponse as Observation } from "../../types.ts";
 
 interface TimelineChartProps {
   observations: Observation[];
