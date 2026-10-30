@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import requests
 
@@ -7,16 +9,32 @@ class BeaClient:
     API_KEY = os.getenv("BEA_API_KEY")
     GDP_TABLE = "T10106"
 
-    @staticmethod
-    def get_gdp():
-        if not BeaClient.API_KEY:
+    SERIES_CODES = {
+        "GDP": ("A191RX", "1"),
+        "EXPORTS": ("A020RX", None),
+        "IMPORTS": ("A021RX", None),
+    }
+
+    @classmethod
+    def _get_api_key(cls) -> str:
+        api_key = cls.API_KEY or os.getenv("BEA_API_KEY")
+        if not api_key:
             raise RuntimeError("Falta la variable de entorno BEA_API_KEY.")
+        return api_key
+
+    @classmethod
+    def _fetch_nipa_series(
+        cls,
+        series_code: str,
+        line_number: str | None = None,
+    ) -> list[dict]:
+        api_key = cls._get_api_key()
 
         params = {
-            "UserID": BeaClient.API_KEY,
+            "UserID": api_key,
             "method": "GetData",
             "DataSetName": "NIPA",
-            "TableName": BeaClient.GDP_TABLE,
+            "TableName": cls.GDP_TABLE,
             "Frequency": "Q",
             "Year": "ALL",
             "ResultFormat": "JSON",
@@ -24,7 +42,7 @@ class BeaClient:
 
         try:
             response = requests.get(
-                BeaClient.BASE_URL,
+                cls.BASE_URL,
                 params=params,
                 timeout=30,
             )
@@ -34,7 +52,7 @@ class BeaClient:
             raise RuntimeError(
                 f"Error de conexión con el BEA: {exc}"
             ) from exc
-        except requests.exceptions.JSONDecodeError as exc:
+        except ValueError as exc:
             raise RuntimeError(
                 "El BEA no devolvió una respuesta JSON válida."
             ) from exc
@@ -47,7 +65,7 @@ class BeaClient:
             )
 
         rows = results.get("Data")
-        if rows is None:
+        if rows is None or not isinstance(rows, list):
             raise ValueError(
                 f"Respuesta inesperada del BEA: {data}"
             )
@@ -55,15 +73,28 @@ class BeaClient:
         observations = [
             row
             for row in rows
-            if row.get("SeriesCode") == "A191RX"
-            and row.get("LineNumber") == "1"
+            if isinstance(row, dict)
+            and row.get("SeriesCode") == series_code
+            and (line_number is None or row.get("LineNumber") == line_number)
             and row.get("CL_UNIT") == "Level"
         ]
 
         if not observations:
             raise ValueError(
-                "El BEA no devolvió observaciones del PIB real "
-                "trimestral (A191RX)."
+                f"El BEA no devolvió observaciones para la serie "
+                f"trimestral ({series_code})."
             )
 
         return observations
+
+    @staticmethod
+    def get_gdp() -> list[dict]:
+        return BeaClient._fetch_nipa_series("A191RX", line_number="1")
+
+    @staticmethod
+    def get_exports() -> list[dict]:
+        return BeaClient._fetch_nipa_series("A020RX")
+
+    @staticmethod
+    def get_imports() -> list[dict]:
+        return BeaClient._fetch_nipa_series("A021RX")

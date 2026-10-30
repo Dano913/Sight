@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import eurostat
+import pandas as pd
 
 
 class EurostatClient:
@@ -43,7 +46,6 @@ class EurostatClient:
 
     @staticmethod
     def get_gdp():
-
         df = eurostat.get_data_df(
             EurostatClient.GDP_DATASET,
             filter_pars={
@@ -52,8 +54,7 @@ class EurostatClient:
                 "unit": "CLV05_MEUR",
             },
         )
-
-        return df
+        return df if df is not None else pd.DataFrame()
 
     # ==========================================
     # INFLATION
@@ -61,7 +62,6 @@ class EurostatClient:
 
     @staticmethod
     def get_inflation():
-
         df = eurostat.get_data_df(
             EurostatClient.INFLATION_DATASET,
             filter_pars={
@@ -70,8 +70,7 @@ class EurostatClient:
                 "unit": "RCH_A_AVG",
             },
         )
-
-        return df
+        return df if df is not None else pd.DataFrame()
 
     # ==========================================
     # CPI
@@ -79,12 +78,10 @@ class EurostatClient:
 
     @staticmethod
     def get_cpi():
-
         df = eurostat.get_data_df(
             EurostatClient.CPI_DATASET
         )
-
-        return df
+        return df if df is not None else pd.DataFrame()
 
     # ==========================================
     # UNEMPLOYMENT
@@ -92,7 +89,6 @@ class EurostatClient:
 
     @staticmethod
     def get_unemployment():
-
         df = eurostat.get_data_df(
             EurostatClient.UNEMPLOYMENT_DATASET,
             filter_pars={
@@ -102,8 +98,7 @@ class EurostatClient:
                 "sex": "T",
             },
         )
-
-        return df
+        return df if df is not None else pd.DataFrame()
 
     # ==========================================
     # HOUSE PRICE INDEX
@@ -111,12 +106,10 @@ class EurostatClient:
 
     @staticmethod
     def get_house_price_index():
-
         df = eurostat.get_data_df(
             EurostatClient.HOUSE_PRICE_INDEX_DATASET
         )
-
-        return df
+        return df if df is not None else pd.DataFrame()
 
     # ==========================================
     # INTEREST RATE
@@ -124,10 +117,10 @@ class EurostatClient:
 
     @staticmethod
     def get_interest_rate():
-
-        return eurostat.get_data_df(
+        df = eurostat.get_data_df(
             EurostatClient.INTEREST_RATE_DATASET
         )
+        return df if df is not None else pd.DataFrame()
 
     # ==========================================
     # INDUSTRIAL PRODUCTION
@@ -135,7 +128,6 @@ class EurostatClient:
 
     @staticmethod
     def get_industrial_production():
-
         df = eurostat.get_data_df(
             EurostatClient.INDUSTRIAL_PRODUCTION_DATASET,
             filter_pars={
@@ -147,10 +139,7 @@ class EurostatClient:
                 "unit": "I21",
             },
         )
-
-        return df
-        
-
+        return df if df is not None else pd.DataFrame()
 
     # ==========================================
     # RETAIL SALES
@@ -158,7 +147,6 @@ class EurostatClient:
 
     @staticmethod
     def get_retail_sales():
-
         df = eurostat.get_data_df(
             EurostatClient.RETAIL_SALES_DATASET,
             filter_pars={
@@ -169,8 +157,7 @@ class EurostatClient:
                 "unit": "I21",
             },
         )
-
-        return df
+        return df if df is not None else pd.DataFrame()
 
     # ==========================================
     # TRADE DATASET
@@ -178,8 +165,7 @@ class EurostatClient:
 
     @staticmethod
     def get_trade():
-
-        return eurostat.get_data_df(
+        df = eurostat.get_data_df(
             EurostatClient.TRADE_BALANCE_DATASET,
             filter_pars={
                 "freq": "M",
@@ -189,6 +175,7 @@ class EurostatClient:
                 "sitc06": "TOTAL",
             },
         )
+        return df if df is not None else pd.DataFrame()
 
     # ==========================================
     # EXPORTS
@@ -196,9 +183,9 @@ class EurostatClient:
 
     @staticmethod
     def get_exports():
-
         df = EurostatClient.get_trade()
-
+        if df.empty or "stk_flow" not in df.columns:
+            return pd.DataFrame()
         return df[df["stk_flow"] == "EXP"].copy()
 
     # ==========================================
@@ -207,9 +194,9 @@ class EurostatClient:
 
     @staticmethod
     def get_imports():
-
         df = EurostatClient.get_trade()
-
+        if df.empty or "stk_flow" not in df.columns:
+            return pd.DataFrame()
         return df[df["stk_flow"] == "IMP"].copy()
 
     @staticmethod
@@ -217,30 +204,36 @@ class EurostatClient:
         """
         Trade value/balance per EU member state (annual data).
         partner: 'WORLD' for total trade, or 'EXT_EU27_2020' for
-        extra-EU trade only (verify exact code in the dataset's
-        dimension list before relying on it).
+        extra-EU trade only.
         """
-        return eurostat.get_data_df(
+        df = eurostat.get_data_df(
             EurostatClient.TRADE_BY_COUNTRY_DATASET,
             filter_pars={
-                "geo": EurostatClient.EU_COUNTRIES,  # ojo: quita "EU27_2020" si solo quieres países individuales
+                "geo": EurostatClient.EU_COUNTRIES,
                 "partner": partner,
                 "sitc06": "TOTAL",
                 "indic_et": ["MIO_EXP_VAL", "MIO_IMP_VAL", "MIO_BAL_VAL"],
             },
         )
+        return df if df is not None else pd.DataFrame()
 
     @staticmethod
     def get_exports_by_country(partner: str = "WORLD"):
         df = EurostatClient.get_trade_by_country(partner)
+        if df.empty or "indic_et" not in df.columns:
+            return pd.DataFrame()
         return df[df["indic_et"] == "MIO_EXP_VAL"].copy()
 
     @staticmethod
     def get_imports_by_country(partner: str = "WORLD"):
         df = EurostatClient.get_trade_by_country(partner)
+        if df.empty or "indic_et" not in df.columns:
+            return pd.DataFrame()
         return df[df["indic_et"] == "MIO_IMP_VAL"].copy()
 
     @staticmethod
     def get_trade_balance_by_country(partner: str = "WORLD"):
         df = EurostatClient.get_trade_by_country(partner)
+        if df.empty or "indic_et" not in df.columns:
+            return pd.DataFrame()
         return df[df["indic_et"] == "MIO_BAL_VAL"].copy()

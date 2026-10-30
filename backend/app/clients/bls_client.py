@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
 
@@ -22,15 +24,21 @@ class BlsClient:
     END_YEAR = 2026
     MAX_YEARS_PER_REQUEST = 10
 
-    @staticmethod
-    def _get_series(series_id: str) -> list[dict]:
-        if not BlsClient.API_KEY:
+    @classmethod
+    def _get_api_key(cls) -> str:
+        api_key = cls.API_KEY or os.getenv("BLS_API_KEY")
+        if not api_key:
             raise RuntimeError(
                 "BLS_API_KEY no está definida. "
                 "Comprueba la configuración del archivo .env."
             )
+        return api_key
 
-        all_observations = []
+    @staticmethod
+    def _get_series(series_id: str) -> list[dict]:
+        api_key = BlsClient._get_api_key()
+
+        all_observations: list[dict] = []
         start = BlsClient.START_YEAR
 
         while start <= BlsClient.END_YEAR:
@@ -39,19 +47,27 @@ class BlsClient:
                 BlsClient.END_YEAR,
             )
 
-            response = requests.post(
-                BlsClient.BASE_URL,
-                json={
-                    "seriesid": [series_id],
-                    "startyear": str(start),
-                    "endyear": str(end),
-                    "registrationkey": BlsClient.API_KEY,
-                },
-                timeout=30,
-            )
-
-            response.raise_for_status()
-            data = response.json()
+            try:
+                response = requests.post(
+                    BlsClient.BASE_URL,
+                    json={
+                        "seriesid": [series_id],
+                        "startyear": str(start),
+                        "endyear": str(end),
+                        "registrationkey": api_key,
+                    },
+                    timeout=30,
+                )
+                response.raise_for_status()
+                data = response.json()
+            except requests.RequestException as exc:
+                raise RuntimeError(
+                    f"Error de conexión con BLS para {series_id}: {exc}"
+                ) from exc
+            except ValueError as exc:
+                raise RuntimeError(
+                    f"BLS no devolvió una respuesta JSON válida para {series_id}."
+                ) from exc
 
             if data.get("status") != "REQUEST_SUCCEEDED":
                 raise ValueError(
@@ -73,6 +89,7 @@ class BlsClient:
         unique = {
             (row["year"], row["period"]): row
             for row in all_observations
+            if isinstance(row, dict) and "year" in row and "period" in row
         }
 
         return sorted(
@@ -93,7 +110,10 @@ class BlsClient:
         cpi_by_period = {}
 
         for row in cpi_data:
-            period = row.get("period", "")
+            if not isinstance(row, dict):
+                continue
+
+            period = str(row.get("period", ""))
 
             if not period.startswith("M") or period == "M13":
                 continue
@@ -134,3 +154,33 @@ class BlsClient:
     def get_unemployment() -> list[dict]:
         """Obtiene la tasa de desempleo de Estados Unidos."""
         return BlsClient._get_series(BlsClient.UNEMPLOYMENT_SERIES)
+
+    @staticmethod
+    def get_interest_rate() -> list[dict]:
+        """
+        Stub compatible con ObservationService._FETCHER_REGISTRY.
+        Los tipos de interés de EE. UU. no son publicados por BLS.
+        """
+        raise ValueError(
+            "INTEREST_RATE no está disponible en BLS."
+        )
+
+    @staticmethod
+    def get_industrial_production() -> list[dict]:
+        """
+        Stub compatible con ObservationService._FETCHER_REGISTRY.
+        La producción industrial de EE. UU. no es publicada por BLS.
+        """
+        raise ValueError(
+            "INDUSTRIAL_PRODUCTION no está disponible en BLS."
+        )
+
+    @staticmethod
+    def get_retail_sales() -> list[dict]:
+        """
+        Stub compatible con ObservationService._FETCHER_REGISTRY.
+        Las ventas minoristas de EE. UU. no son publicadas por BLS.
+        """
+        raise ValueError(
+            "RETAIL_SALES no está disponible en BLS."
+        )
