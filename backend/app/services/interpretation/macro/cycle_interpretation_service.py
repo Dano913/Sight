@@ -58,6 +58,10 @@ class CycleInterpretationService:
             )
 
         best_cycle = cycles[0]
+        if not isinstance(best_cycle, dict):
+            return cls._no_cycle_interpretation(
+                cycle_analysis
+            )
 
         return {
             "cycle_detected": True,
@@ -79,30 +83,27 @@ class CycleInterpretationService:
     ) -> dict[str, Any]:
 
         score = float(
-            cycle.get("score", 0.0)
+            cycle.get("score") or 0.0
         )
 
         confidence = cycle.get(
-            "confidence",
-            "BAJA",
-        )
+            "confidence"
+        ) or "BAJA"
 
         period = float(
-            cycle.get("period_years", 0.0)
+            cycle.get("period_years") or 0.0
         )
 
         cycles_observable = float(
             cycle.get(
-                "cycles_observable",
-                0.0,
-            )
+                "cycles_observable"
+            ) or 0.0
         )
 
         method_count = int(
             cycle.get(
-                "method_count",
-                0,
-            )
+                "method_count"
+            ) or 0
         )
 
         evidence_level = cls._classify_evidence_level(
@@ -253,13 +254,12 @@ class CycleInterpretationService:
         best = cycles[0]
 
         score = float(
-            best.get("score", 0.0)
+            best.get("score") or 0.0
         )
 
         confidence = best.get(
-            "confidence",
-            "BAJA",
-        )
+            "confidence"
+        ) or "BAJA"
 
         evidence_level = cls._classify_evidence_level(
             score=score,
@@ -268,16 +268,14 @@ class CycleInterpretationService:
 
         cycles_observable = float(
             best.get(
-                "cycles_observable",
-                0.0,
-            )
+                "cycles_observable"
+            ) or 0.0
         )
 
         method_count = int(
             best.get(
-                "method_count",
-                0,
-            )
+                "method_count"
+            ) or 0
         )
 
         sample_quality = cls._classify_sample_quality(
@@ -346,16 +344,14 @@ class CycleInterpretationService:
 
         cycles_observable = float(
             cycle.get(
-                "cycles_observable",
-                0.0,
-            )
+                "cycles_observable"
+            ) or 0.0
         )
 
         method_count = int(
             cycle.get(
-                "method_count",
-                0,
-            )
+                "method_count"
+            ) or 0
         )
 
         if cycles_observable < 2:

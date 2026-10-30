@@ -658,3 +658,15 @@ def test_position_does_not_directly_determine_regime():
         )
         == "expansion"
     )
+
+
+def test_classify_with_none_inputs_returns_stagnation():
+    result = RegimeClassifier.classify(
+        growth=None,
+        trend=None,
+        momentum=None,
+        volatility=None,
+        position=None,
+        transition=None,
+    )
+    assert result == "stagnation"

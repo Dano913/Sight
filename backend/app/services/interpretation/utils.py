@@ -26,6 +26,25 @@ def safe_float(value: Any) -> float | None:
     return value
 
 
+def safe_bool(value: Any) -> bool:
+    """
+    Convierte un valor a bool de forma segura.
+
+    Maneja None, NaN (que en Python nativo evalúa a True con bool(float('nan')))
+    y valores nulos de pandas.
+    """
+    if value is None:
+        return False
+
+    try:
+        if pd.isna(value):
+            return False
+    except (TypeError, ValueError):
+        pass
+
+    return bool(value)
+
+
 def serialize(value: Any) -> Any:
     """
     Convierte valores pandas/numpy en tipos serializables.

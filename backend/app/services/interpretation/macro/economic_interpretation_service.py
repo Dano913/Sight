@@ -12,7 +12,7 @@ from .regime_classifier import RegimeClassifier
 from ..constants import REQUIRED_FEATURES, REQUIRED_SIGNALS
 from .transition_detector import TransitionDetector
 from .trend_interpreter import TrendInterpreter
-from ..utils import serialize
+from ..utils import safe_bool, serialize
 from .volatility_interpreter import VolatilityInterpreter
 
 
@@ -114,7 +114,7 @@ class EconomicInterpretationService:
                 if column in features.columns
             },
             "signals": {
-                column: bool(latest_signals[column])
+                column: safe_bool(latest_signals[column])
                 for column in REQUIRED_SIGNALS
             },
         }

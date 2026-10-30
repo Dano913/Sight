@@ -4,7 +4,7 @@ from typing import Any
 
 import pandas as pd
 
-from ..utils import safe_float, serialize
+from ..utils import safe_bool, safe_float, serialize
 
 
 class TrendInterpreter:
@@ -50,51 +50,51 @@ class TrendInterpreter:
     ) -> dict[str, Any]:
 
         short_slope = safe_float(
-            features["rolling_slope_short"]
+            features.get("rolling_slope_short")
         )
 
         medium_slope = safe_float(
-            features["rolling_slope_medium"]
+            features.get("rolling_slope_medium")
         )
 
         long_slope = safe_float(
-            features["rolling_slope_long"]
+            features.get("rolling_slope_long")
         )
 
         acceleration = safe_float(
-            features["acceleration"]
+            features.get("acceleration")
         )
 
         slope_change = safe_float(
-            features["slope_change"]
+            features.get("slope_change")
         )
 
         trend_change = safe_float(
-            features["trend_change"]
+            features.get("trend_change")
         )
 
-        bullish = bool(
-            signals["bullish_trend"]
+        bullish = safe_bool(
+            signals.get("bullish_trend", False)
         )
 
-        bearish = bool(
-            signals["bearish_trend"]
+        bearish = safe_bool(
+            signals.get("bearish_trend", False)
         )
 
-        mixed = bool(
-            signals["mixed_trend"]
+        mixed = safe_bool(
+            signals.get("mixed_trend", False)
         )
 
-        reversal = bool(
-            signals["trend_reversal"]
+        reversal = safe_bool(
+            signals.get("trend_reversal", False)
         )
 
-        strengthening = bool(
-            signals["trend_strengthening"]
+        strengthening = safe_bool(
+            signals.get("trend_strengthening", False)
         )
 
-        weakening = bool(
-            signals["trend_weakening"]
+        weakening = safe_bool(
+            signals.get("trend_weakening", False)
         )
 
         # ---------------------------------------------------------
@@ -291,22 +291,22 @@ class TrendInterpreter:
 
             # Raw metrics
             "short_slope": serialize(
-                features["rolling_slope_short"]
+                features.get("rolling_slope_short")
             ),
             "medium_slope": serialize(
-                features["rolling_slope_medium"]
+                features.get("rolling_slope_medium")
             ),
             "long_slope": serialize(
-                features["rolling_slope_long"]
+                features.get("rolling_slope_long")
             ),
             "acceleration": serialize(
-                features["acceleration"]
+                features.get("acceleration")
             ),
             "slope_change": serialize(
-                features["slope_change"]
+                features.get("slope_change")
             ),
             "trend_change": serialize(
-                features["trend_change"]
+                features.get("trend_change")
             ),
         }
 

@@ -503,3 +503,25 @@ def test_interpret_does_not_change_original_cycle_data():
     CycleInterpretationService._interpret_cycle(cycle)
 
     assert cycle == original
+
+
+def test_interpret_cycle_with_none_attributes_does_not_crash():
+    cycle = {
+        "score": None,
+        "confidence": None,
+        "period_years": None,
+        "cycles_observable": None,
+        "method_count": None,
+    }
+    result = CycleInterpretationService._interpret_cycle(cycle)
+    assert result["score"] == 0.0
+    assert result["confidence"] == "BAJA"
+    assert result["period_years"] == 0.0
+    assert result["cycles_observable"] == 0.0
+    assert result["method_count"] == 0
+
+
+def test_interpret_non_dict_best_cycle_returns_no_cycle_interpretation():
+    result = CycleInterpretationService.interpret({"robust_cycles": [None]})
+    assert result["cycle_detected"] is False
+    assert result["best_cycle"] is None

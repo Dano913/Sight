@@ -4,7 +4,7 @@ from typing import Any
 
 import pandas as pd
 
-from ..utils import safe_float, serialize
+from ..utils import safe_bool, safe_float, serialize
 
 
 class GrowthInterpreter:
@@ -35,19 +35,19 @@ class GrowthInterpreter:
         )
 
         if is_rate:
-            variation = safe_float(features["change"])
+            variation = safe_float(features.get("change"))
         else:
             variation = safe_float(
-                features["percentage_change"]
+                features.get("percentage_change")
             )
 
-        acceleration = safe_float(features["acceleration"])
+        acceleration = safe_float(features.get("acceleration"))
 
-        positive = bool(signals["positive_growth"])
-        negative = bool(signals["negative_growth"])
-        accelerating = bool(signals["accelerating_growth"])
-        decelerating = bool(signals["decelerating_growth"])
-        reversal = bool(signals["growth_reversal"])
+        positive = safe_bool(signals.get("positive_growth", False))
+        negative = safe_bool(signals.get("negative_growth", False))
+        accelerating = safe_bool(signals.get("accelerating_growth", False))
+        decelerating = safe_bool(signals.get("decelerating_growth", False))
+        reversal = safe_bool(signals.get("growth_reversal", False))
 
         # Estado basado en las señales, conservando la prioridad negativa.
         if negative:
@@ -101,11 +101,11 @@ class GrowthInterpreter:
             "reversal": reversal,
             "percentage_change": (
                 None if is_rate
-                else serialize(features["percentage_change"])
+                else serialize(features.get("percentage_change"))
             ),
             "growth_rate_state": growth_rate_state,
             "acceleration_value": serialize(
-                features["acceleration"]
+                features.get("acceleration")
             ),
             "dynamic_state": dynamic_state,
         }

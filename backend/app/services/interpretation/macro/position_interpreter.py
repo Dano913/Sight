@@ -4,7 +4,7 @@ from typing import Any
 
 import pandas as pd
 
-from ..utils import safe_float, serialize
+from ..utils import safe_bool, safe_float, serialize
 
 
 class PositionInterpreter:
@@ -48,39 +48,39 @@ class PositionInterpreter:
         features: pd.Series,
         signals: pd.Series,
     ) -> dict[str, Any]:
-        percentile = safe_float(features["percentile"])
-        rolling_percentile = safe_float(features["rolling_percentile"])
-        zscore = safe_float(features["zscore"])
+        percentile = safe_float(features.get("percentile"))
+        rolling_percentile = safe_float(features.get("rolling_percentile"))
+        zscore = safe_float(features.get("zscore"))
         distance_from_mean = safe_float(
-            features["distance_from_rolling_mean"]
+            features.get("distance_from_rolling_mean")
         )
         distance_from_max = safe_float(
-            features["distance_from_max"]
+            features.get("distance_from_max")
         )
         distance_from_min = safe_float(
-            features["distance_from_min"]
+            features.get("distance_from_min")
         )
-        drawdown = safe_float(features["drawdown"])
+        drawdown = safe_float(features.get("drawdown"))
 
-        near_high = bool(signals["near_historical_high"])
-        near_low = bool(signals["near_historical_low"])
-        significant_drawdown = bool(
-            signals["significant_drawdown"]
+        near_high = safe_bool(signals.get("near_historical_high", False))
+        near_low = safe_bool(signals.get("near_historical_low", False))
+        significant_drawdown = safe_bool(
+            signals.get("significant_drawdown", False)
         )
-        severe_drawdown = bool(
-            signals["severe_drawdown"]
+        severe_drawdown = safe_bool(
+            signals.get("severe_drawdown", False)
         )
-        historical_extreme_high = bool(
-            signals["historical_extreme_high"]
+        historical_extreme_high = safe_bool(
+            signals.get("historical_extreme_high", False)
         )
-        historical_extreme_low = bool(
-            signals["historical_extreme_low"]
+        historical_extreme_low = safe_bool(
+            signals.get("historical_extreme_low", False)
         )
-        recovering = bool(
-            signals["recovering_from_drawdown"]
+        recovering = safe_bool(
+            signals.get("recovering_from_drawdown", False)
         )
-        falling_from_high = bool(
-            signals["falling_from_high"]
+        falling_from_high = safe_bool(
+            signals.get("falling_from_high", False)
         )
 
         position = cls._classify_position(
@@ -138,21 +138,21 @@ class PositionInterpreter:
             "recovering_from_drawdown": recovering,
             "falling_from_high": falling_from_high,
 
-            "zscore": serialize(features["zscore"]),
-            "percentile": serialize(features["percentile"]),
+            "zscore": serialize(features.get("zscore")),
+            "percentile": serialize(features.get("percentile")),
             "rolling_percentile": serialize(
-                features["rolling_percentile"]
+                features.get("rolling_percentile")
             ),
             "distance_from_mean": serialize(
-                features["distance_from_rolling_mean"]
+                features.get("distance_from_rolling_mean")
             ),
             "distance_from_max": serialize(
-                features["distance_from_max"]
+                features.get("distance_from_max")
             ),
             "distance_from_min": serialize(
-                features["distance_from_min"]
+                features.get("distance_from_min")
             ),
-            "drawdown": serialize(features["drawdown"]),
+            "drawdown": serialize(features.get("drawdown")),
         }
 
     @classmethod

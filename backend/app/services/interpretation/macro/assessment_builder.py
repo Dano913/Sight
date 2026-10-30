@@ -24,14 +24,21 @@ class AssessmentBuilder:
     def build(
         cls,
         *,
-        growth: dict[str, Any],
-        trend: dict[str, Any],
-        momentum: dict[str, Any],
-        volatility: dict[str, Any],
-        position: dict[str, Any],
-        transition: dict[str, Any],
-        regime: str,
+        growth: dict[str, Any] | None = None,
+        trend: dict[str, Any] | None = None,
+        momentum: dict[str, Any] | None = None,
+        volatility: dict[str, Any] | None = None,
+        position: dict[str, Any] | None = None,
+        transition: dict[str, Any] | None = None,
+        regime: str = "neutral",
     ) -> dict[str, Any]:
+
+        growth = growth or {}
+        trend = trend or {}
+        momentum = momentum or {}
+        volatility = volatility or {}
+        position = position or {}
+        transition = transition or {}
 
         directions = [
             growth.get("direction"),

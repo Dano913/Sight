@@ -42,12 +42,18 @@ class TransitionDetector:
     @staticmethod
     def detect(
         *,
-        growth: dict[str, Any],
-        trend: dict[str, Any],
-        momentum: dict[str, Any],
-        volatility: dict[str, Any],
-        position: dict[str, Any],
+        growth: dict[str, Any] | None = None,
+        trend: dict[str, Any] | None = None,
+        momentum: dict[str, Any] | None = None,
+        volatility: dict[str, Any] | None = None,
+        position: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+
+        growth = growth or {}
+        trend = trend or {}
+        momentum = momentum or {}
+        volatility = volatility or {}
+        position = position or {}
 
         evidence: list[dict[str, Any]] = []
 

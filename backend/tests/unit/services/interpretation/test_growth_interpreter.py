@@ -540,3 +540,26 @@ def test_extreme_acceleration_values(
 
     assert result["direction"] == expected_direction
     assert result["acceleration"] == expected_state
+
+
+def test_rate_series_interpretation_with_change_column():
+    features = pd.Series({"change": 0.25, "acceleration": 0.05})
+    signals = make_signals(positive_growth=True)
+
+    result = GrowthInterpreter.interpret(features, signals)
+
+    assert result["growth_rate_state"] == "not_applicable"
+    assert result["percentage_change"] is None
+    assert result["state"] == "positive"
+    assert result["direction"] == "improving"
+
+
+def test_missing_variation_columns_does_not_crash():
+    features = pd.Series({"acceleration": 0.05})
+    signals = make_signals()
+
+    result = GrowthInterpreter.interpret(features, signals)
+
+    assert result["growth_rate_state"] == "unknown"
+    assert result["percentage_change"] is None
+    assert result["direction"] == "improving"

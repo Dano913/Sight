@@ -4,7 +4,7 @@ from typing import Any
 
 import pandas as pd
 
-from ..utils import safe_float, serialize
+from ..utils import safe_bool, safe_float, serialize
 
 
 class MomentumInterpreter:
@@ -43,27 +43,27 @@ class MomentumInterpreter:
     ) -> dict[str, Any]:
 
         momentum = safe_float(
-            features["momentum"]
+            features.get("momentum")
         )
 
         acceleration = safe_float(
-            features["acceleration"]
+            features.get("acceleration")
         )
 
-        positive = bool(
-            signals["positive_momentum"]
+        positive = safe_bool(
+            signals.get("positive_momentum", False)
         )
 
-        negative = bool(
-            signals["negative_momentum"]
+        negative = safe_bool(
+            signals.get("negative_momentum", False)
         )
 
-        improving = bool(
-            signals["momentum_improving"]
+        improving = safe_bool(
+            signals.get("momentum_improving", False)
         )
 
-        weakening = bool(
-            signals["momentum_weakening"]
+        weakening = safe_bool(
+            signals.get("momentum_weakening", False)
         )
 
         # ---------------------------------------------------------
@@ -154,10 +154,10 @@ class MomentumInterpreter:
 
             # Raw values
             "value": serialize(
-                features["momentum"]
+                features.get("momentum")
             ),
             "acceleration_value": serialize(
-                features["acceleration"]
+                features.get("acceleration")
             ),
 
             # Compatibility fields

@@ -749,3 +749,20 @@ def test_assessment_does_not_reclassify_dimensions():
     assert result["directional_bias"] == "improving"
     assert result["regime"] == "recovery"
     assert result["coherence"] == "high"
+
+
+def test_build_with_none_inputs_does_not_crash():
+    result = AssessmentBuilder.build(
+        growth=None,
+        trend=None,
+        momentum=None,
+        volatility=None,
+        position=None,
+        transition=None,
+        regime="neutral",
+    )
+    assert result["state"] == "neutral"
+    assert result["directional_bias"] == "unknown"
+    assert result["coherence"] == "unknown"
+    assert result["confidence"] == "low"
+    assert result["reasons"] == []

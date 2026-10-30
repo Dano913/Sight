@@ -3,7 +3,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from app.services.interpretation.utils import safe_float, serialize
+from app.services.interpretation.utils import safe_bool, safe_float, serialize
 
 
 # ============================================================
@@ -84,3 +84,37 @@ def test_serialize_normal_float():
 
 def test_serialize_normal_string():
     assert serialize("GDP") == "GDP"
+
+
+# ============================================================
+# safe_bool
+# ============================================================
+
+
+def test_safe_bool_with_bool():
+    assert safe_bool(True) is True
+    assert safe_bool(False) is False
+
+
+def test_safe_bool_with_none():
+    assert safe_bool(None) is False
+
+
+def test_safe_bool_with_nan():
+    assert safe_bool(float("nan")) is False
+    assert safe_bool(np.nan) is False
+
+
+def test_safe_bool_with_pandas_na():
+    assert safe_bool(pd.NA) is False
+
+
+def test_safe_bool_with_numeric():
+    assert safe_bool(1) is True
+    assert safe_bool(0) is False
+    assert safe_bool(0.0) is False
+
+
+def test_safe_bool_with_string():
+    assert safe_bool("true") is True
+    assert safe_bool("") is False

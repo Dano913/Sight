@@ -4,7 +4,7 @@ from typing import Any
 
 import pandas as pd
 
-from ..utils import safe_float, serialize
+from ..utils import safe_bool, safe_float, serialize
 
 
 class VolatilityInterpreter:
@@ -48,35 +48,35 @@ class VolatilityInterpreter:
     ) -> dict[str, Any]:
 
         volatility = safe_float(
-            features["rolling_volatility"]
+            features.get("rolling_volatility")
         )
 
         volatility_zscore = safe_float(
-            features["volatility_zscore"]
+            features.get("volatility_zscore")
         )
 
         volatility_change = safe_float(
-            features["volatility_change"]
+            features.get("volatility_change")
         )
 
-        high = bool(
-            signals["high_volatility"]
+        high = safe_bool(
+            signals.get("high_volatility", False)
         )
 
-        extreme = bool(
-            signals["extreme_volatility"]
+        extreme = safe_bool(
+            signals.get("extreme_volatility", False)
         )
 
-        increasing = bool(
-            signals["volatility_increasing"]
+        increasing = safe_bool(
+            signals.get("volatility_increasing", False)
         )
 
-        decreasing = bool(
-            signals["volatility_decreasing"]
+        decreasing = safe_bool(
+            signals.get("volatility_decreasing", False)
         )
 
-        shock = bool(
-            signals["volatility_shock"]
+        shock = safe_bool(
+            signals.get("volatility_shock", False)
         )
 
         # ---------------------------------------------------------
@@ -164,12 +164,12 @@ class VolatilityInterpreter:
 
             # Raw values
             "volatility": serialize(
-                features["rolling_volatility"]
+                features.get("rolling_volatility")
             ),
             "volatility_zscore": serialize(
-                features["volatility_zscore"]
+                features.get("volatility_zscore")
             ),
             "volatility_change": serialize(
-                features["volatility_change"]
+                features.get("volatility_change")
             ),
         }

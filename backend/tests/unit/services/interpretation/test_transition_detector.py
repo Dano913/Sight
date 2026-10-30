@@ -1052,3 +1052,16 @@ def test_evidence_preserves_all_original_evidence():
     )
 
     assert result["evidence"] == evidence
+
+
+def test_detect_with_none_inputs_does_not_crash():
+    result = TransitionDetector.detect(
+        growth=None,
+        trend=None,
+        momentum=None,
+        volatility=None,
+        position=None,
+    )
+    assert result["detected"] is False
+    assert result["state"] == "none"
+    assert result["direction"] == "unknown"
