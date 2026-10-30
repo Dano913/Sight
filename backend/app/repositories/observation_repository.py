@@ -267,6 +267,8 @@ class ObservationRepository:
         region_codes: list[str],
         indicator_code: str
     ) -> list[Observation]:
+        if not region_codes:
+            return []
 
         connection = get_connection()
         cursor = connection.cursor()

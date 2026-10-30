@@ -1,22 +1,75 @@
-from fastapi import APIRouter, HTTPException
+from __future__ import annotations
 
+from fastapi import APIRouter, HTTPException
 import pandas as pd
 
 from app.models.cycle_analysis import CycleAnalysisResult
 from app.models.feature_analysis import FeatureAnalysisResult
-from app.services.analysis.cycle.cycle_analysis_service import CycleAnalysisService
-from app.services.features.feature_engine import FeatureEngine
-from app.services.catalog.observation_service import ObservationService
-from app.services.catalog.indicator_service import IndicatorService
+from app.models.indicator import Indicator
+from app.models.observation import Observation
 from app.services.analysis.analysis_service import AnalysisService
+from app.services.analysis.cycle.cycle_analysis_service import (
+    CycleAnalysisService,
+)
 from app.services.analysis.investment.investment_analysis_service import (
     InvestmentAnalysisService,
 )
+from app.services.catalog.indicator_service import IndicatorService
+from app.services.catalog.observation_service import ObservationService
+from app.services.catalog.query_service import QueryService
+from app.services.features.feature_engine import FeatureEngine
 
 router = APIRouter(
     prefix="/analysis",
-    tags=["analysis"],
+    tags=["Analysis"],
 )
+
+
+def _get_observations_for_analysis(
+    indicator_code: str,
+    region_code: str,
+) -> tuple[Indicator, list[Observation]]:
+    """
+    Valida el indicador y recupera sus observaciones (incluyendo el
+    indicador sintético TRADE) para la región solicitada.
+    """
+    clean_indicator = indicator_code.strip().upper()
+    clean_region = region_code.strip().upper()
+
+    try:
+        indicator = IndicatorService.get_indicator(clean_indicator)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+        ) from e
+
+    try:
+        if clean_indicator == "TRADE":
+            observations = QueryService._compute_trade_observations(
+                region_code=clean_region,
+            )
+        else:
+            observations = ObservationService.get_observations(
+                indicator_code=clean_indicator,
+                region_code=clean_region,
+            )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+        ) from e
+
+    if not observations:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"No hay observaciones para "
+                f"{clean_indicator} en {clean_region}"
+            ),
+        )
+
+    return indicator, observations
 
 
 # ======================================================
@@ -32,32 +85,27 @@ def get_cycle_analysis(
     region_code: str,
 ):
     try:
-        observations = ObservationService.get_observations(
+        _, observations = _get_observations_for_analysis(
             indicator_code=indicator_code,
             region_code=region_code,
         )
 
-        if not observations:
-            raise HTTPException(
-                status_code=404,
-                detail=(
-                    f"No hay observaciones para "
-                    f"{indicator_code} en {region_code}"
-                ),
-            )
-
-        result = CycleAnalysisService.analyze(observations)
-
-        return result
+        return CycleAnalysisService.analyze(observations)
 
     except HTTPException:
         raise
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        ) from e
 
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=str(e),
-        )
+        ) from e
 
 
 # ======================================================
@@ -73,33 +121,15 @@ def get_feature_analysis(
     region_code: str,
 ):
     try:
-        observations = ObservationService.get_observations(
+        indicator, observations = _get_observations_for_analysis(
             indicator_code=indicator_code,
             region_code=region_code,
         )
 
-        if not observations:
-            raise HTTPException(
-                status_code=404,
-                detail=(
-                    f"No hay observaciones para "
-                    f"{indicator_code} en {region_code}"
-                ),
-            )
-
-        # Obtener metadatos del indicador
-        indicator = IndicatorService.get_indicator(indicator_code)
-
-        if not indicator:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Indicador no encontrado: {indicator_code}",
-            )
-
         frequency = indicator.frequency.value
 
         # --------------------------------------------------
-        # Convertir observaciones a serie temporal
+        # Convertir observaciones a serie temporal única y ordenada
         # --------------------------------------------------
 
         series = pd.Series(
@@ -110,7 +140,7 @@ def get_feature_analysis(
             dtype="float64",
         )
 
-        series = series.sort_index()
+        series = series.sort_index().groupby(level=0).last()
 
         # --------------------------------------------------
         # Generar features
@@ -149,23 +179,26 @@ def get_feature_analysis(
             )
 
         return {
-            "indicator_code": indicator_code.upper(),
-            "region_code": region_code.upper(),
+            "indicator_code": indicator_code.strip().upper(),
+            "region_code": region_code.strip().upper(),
             "observations": feature_observations,
         }
 
     except HTTPException:
         raise
 
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        ) from e
+
     except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-
         raise HTTPException(
             status_code=500,
             detail=str(e),
-        )
+        ) from e
+
 
 # ======================================================
 # MACRO REGIME
@@ -178,6 +211,7 @@ def get_macro_regime(
     max_lag_days: int | None = 180,
 ):
     try:
+        clean_region = region_code.strip().upper()
         indicator_codes = [
             "GDP",
             "INFLATION",
@@ -193,44 +227,45 @@ def get_macro_regime(
             try:
                 indicator_observations = ObservationService.get_observations(
                     indicator_code=indicator_code,
-                    region_code=region_code,
+                    region_code=clean_region,
                 )
 
                 observations.extend(indicator_observations)
 
-            except ValueError as e:
-                print(
-                    f"[{indicator_code}] No disponible: {e}"
-                )
+            except ValueError:
+                continue
 
         if not observations:
             raise HTTPException(
                 status_code=404,
                 detail=(
                     f"No hay observaciones disponibles "
-                    f"para {region_code}"
+                    f"para {clean_region}"
                 ),
             )
 
-        result = AnalysisService.analyze_multiple(
+        return AnalysisService.analyze_multiple(
             observations,
             as_of_date=as_of_date,
             max_lag_days=max_lag_days,
         )
 
-        return result
-
     except HTTPException:
         raise
 
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        ) from e
 
+    except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=str(e),
-        )
+        ) from e
+
+
 # ======================================================
 # INVESTMENT THESIS
 # ======================================================
@@ -243,19 +278,10 @@ def get_investment_analysis(
     region_code: str,
 ):
     try:
-        observations = ObservationService.get_observations(
+        _, observations = _get_observations_for_analysis(
             indicator_code=indicator_code,
             region_code=region_code,
         )
-
-        if not observations:
-            raise HTTPException(
-                status_code=404,
-                detail=(
-                    f"No hay observaciones para "
-                    f"{indicator_code} en {region_code}"
-                ),
-            )
 
         analysis = AnalysisService.analyze(
             observations,
@@ -287,14 +313,10 @@ def get_investment_analysis(
         raise HTTPException(
             status_code=400,
             detail=str(e),
-        )
+        ) from e
 
     except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-
         raise HTTPException(
             status_code=500,
             detail=str(e),
-        )
+        ) from e
